@@ -1,113 +1,144 @@
 import { Component } from '@angular/core';
+import { FormsModule } from '@angular/forms'; 
+// FormsModule is required to use template-driven forms features like [(ngModel)]
+// Without this import, Angular will throw: "Can't bind to 'ngModel' ..."
 
 @Component({
   selector: 'app-root',
+
+  // Directives/Pipes used in this component template must be imported here.
+  // FormsModule provides ngModel, ngForm, etc.
+  imports: [FormsModule],
+
+  // External template file
   templateUrl: './app.html',
 })
 export class App {
-  // 1) DISPLAY DATA (Real-time values usually come from API)
-  customerName: string = 'Pranaya Rout'; // Logged-in customer name
-  orderId: string = 'ORD-10021';         // Current order reference number
-  productName: string = 'Angular Course - Full Stack Bundle'; // Product/title to show on UI
-  price: number = 4999; // Product price (per unit)
 
-  // 2) UI STATE (User-driven values change via Event Binding)
-  quantity: number = 1;        // Quantity selected by user (via buttons / typing)
-  couponCode: string = '';     // Coupon code typed by user
-  shippingOption: string = 'Standard'; // Dropdown selection
+  // 1) DISPLAY DATA (Normally comes from API / logged-in session)
+  // Purpose:
+  // - These are the "read-only" values we show on the screen.
+  // - In real projects, these typically come from backend services.
+  customerName: string = 'Pranaya Rout';                   // Customer name shown in summary
+  orderId: string = 'ORD-10021';                           // Unique order reference
+  productName: string = 'Angular Course - Full Stack Bundle'; // Product name shown in UI
+  price: number = 4999;                                    // Per-unit price (₹)
 
-  // 3) STATUS FLAGS (These control UI badges, enable/disable etc.)
-  isPremiumCustomer: boolean = true; // Premium gets discount
-  isPaymentDone: boolean = false;    // Payment status controls Pay/Place Order buttons
+  // 2) TWO-WAY BINDING STATE ([(ngModel)] keeps UI <-> TS synced)
+  // Purpose:
+  // - These values are changed by the user (typing/selecting).
+  // - Two-way binding ensures:
+  //   UI changes update TS automatically AND TS changes update UI.
+  quantity: number = 1;                // User-selected quantity (default 1)
+  couponCode: string = '';             // Coupon typed by the user
+  shippingOption: string = 'Standard'; // Default selection in dropdown
 
-  // 4) INVENTORY / DELIVERY (Common in e-commerce dashboards)
-  stockLeft: number = 3;              // Remaining inventory shown to user/admin
-  deliveryProgressPercent: number = 35; // Progress bar fill (0 to 100)
+  // 3) STATUS FLAGS (Used for Class/Property/Style Binding)
+  // Purpose:
+  // - These booleans drive visual state (Paid/Pending, Premium/Regular)
+  // - Also used to enable/disable buttons in the template.
+  isPremiumCustomer: boolean = true;  // Premium users get discount
+  isPaymentDone: boolean = false;     // Controls Pay/Place Order flow
 
-  // 5) UI FEEDBACK MESSAGE
-  uiMessage: string = ''; // Displays success/error messages after user actions
+  // 4) INVENTORY + DELIVERY (Common dashboard fields)
+  // Purpose:
+  // - stockLeft can show warnings (low-stock highlighting)
+  // - deliveryProgressPercent drives a progress bar UI (0..100)
+  stockLeft: number = 3;                 // Inventory left
+  deliveryProgressPercent: number = 35;  // Delivery progress percentage
 
-  // 6) DISPLAY HELPERS (Used by Interpolation + Class/Style Binding)
-  // Returns a label for the Payment badge
-  // Used in template like: {{ getPaymentLabel() }}
+  // 5) UI FEEDBACK MESSAGE (Displayed to user after actions)
+  // Purpose:
+  // - After any click/input action, show a short message.
+  // - This is a typical UX pattern in real checkout flows.
+  uiMessage: string = ''; // Example: "Coupon applied", "Quantity updated", etc.
+
+  // 6) HELPER METHODS (Used mainly for display in template)
+  // Purpose:
+  // - Keep template clean by preparing readable text in TS.
+  // - Used via interpolation: {{ getPaymentLabel() }}
+
+  // Returns a human-friendly label for payment status badge.
   getPaymentLabel(): string {
+    // If payment completed -> Paid, else -> Pending
     return this.isPaymentDone ? 'Paid' : 'Pending';
   }
 
-  // Returns a label for the Membership badge
-  // Used in template like: {{ getMembershipLabel() }}
+  // Returns a human-friendly label for membership badge.
   getMembershipLabel(): string {
+    // If premium -> Premium, else -> Regular
     return this.isPremiumCustomer ? 'Premium' : 'Regular';
   }
 
-  // Computes the final payable amount based on business rules
-  // Real-time rule: Premium users get 20% discount
-  // Used in template like: ₹{{ getFinalPayable() }}
+  // Calculates final payable amount using business rules.
+  // Real-time rule:
+  // - Premium customers get 20% discount on total amount.
+  // This method is displayed in UI as: ₹{{ getFinalPayable() }}
   getFinalPayable(): number {
-    const total = this.price * this.quantity;                    // base total = unit price × quantity
-    const discount = this.isPremiumCustomer ? total * 0.2 : 0;   // 20% discount for premium
-    return total - discount;                                     // final payable amount
+    const total = this.price * this.quantity;                  // Total = price × quantity
+    const discount = this.isPremiumCustomer ? total * 0.2 : 0; // 20% discount for premium users
+    return total - discount;                                   // Final amount after discount
   }
 
-  // 7) EVENT HANDLERS (Event Binding: View → Component)
-  // These methods are called when the user clicks/types/selects.
-  // After data changes here, Angular automatically updates the UI.
+  // 7) EVENT HANDLERS (Triggered by user actions in the template)
+  // Purpose:
+  // - These methods are called via event binding: (click), (submit), etc.
+  // - After updating component state, Angular automatically updates the UI.
 
-  // (click) Increase quantity button
-  // Real-time: Cart quantity should not exceed a practical limit (demo: max 10)
+  // Increase quantity (called by + button)
+  // Real-time rule:
+  // - E-commerce apps usually cap quantity to avoid unrealistic orders.
+  // - Demo cap: max 10.
   increaseQuantity(): void {
     if (this.quantity < 10) {
-      this.quantity++; // update the state
-      this.uiMessage = `Quantity updated to ${this.quantity}.`; // show feedback message
+      this.quantity++; // Update quantity in component state
+      this.uiMessage = `Quantity updated to ${this.quantity}.`; // User feedback
     }
   }
 
-  // (click) Decrease quantity button
-  // Real-time: Quantity should not go below 1
+  // Decrease quantity (called by - button)
+  // Real-time rule:
+  // - Quantity should not go below 1.
   decreaseQuantity(): void {
     if (this.quantity > 1) {
-      this.quantity--; // update the state
-      this.uiMessage = `Quantity updated to ${this.quantity}.`; // show feedback message
+      this.quantity--; // Update quantity in component state
+      this.uiMessage = `Quantity updated to ${this.quantity}.`; // User feedback
     }
   }
 
-  // (input) Quantity typed into the textbox
-  // NOTE: We are not using ngModel yet. So we manually read the input from $event.
-  onQuantityInput(event: Event): void {
-    // Read current input value from the textbox
-    const value = (event.target as HTMLInputElement).value;
+  // Called when quantity changes via [(ngModel)] input typing.
+  // Why do we need this even with ngModel?
+  // - Because user can type invalid numbers (0, -5, 999, empty, etc.)
+  // - We validate and keep the state safe.
+  onQuantityChanged(value: number): void {
+    const parsed = Number(value); // Convert to number safely
 
-    // Convert the string value to a number
-    const parsed = Number(value);
-
-    // Basic validation: must be a valid number and within 1..10
+    // Valid range check: 1..10
     if (!Number.isNaN(parsed) && parsed >= 1 && parsed <= 10) {
-      this.quantity = parsed; // store in component state
+      this.quantity = parsed; // Accept valid input
       this.uiMessage = `Quantity set to ${this.quantity}.`;
     } else {
-      // If user types invalid input, we don't update quantity
-      this.uiMessage = 'Quantity must be between 1 and 10.';
+      // Reset to safe default and inform the user
+      this.quantity = 1;
+      this.uiMessage = 'Quantity must be between 1 and 10. Reset to 1.';
     }
   }
 
-  // (input) Coupon code typed into textbox
-  // We store the latest typed value in couponCode
-  onCouponInput(event: Event): void {
-    this.couponCode = (event.target as HTMLInputElement).value;
-  }
-
-  // (click) Apply Coupon OR (keyup.enter) Apply Coupon
-  // Real-time: coupon validation usually happens via API, here we simulate it with a simple rule
+  // Apply coupon (called by Apply button or Enter key)
+  // Real-world note:
+  // - Usually coupon validation happens via API call.
+  // - Here we simulate it with a simple rule for learning.
   applyCoupon(): void {
-    const code = this.couponCode.trim().toUpperCase(); // normalize coupon input
+    const code = this.couponCode.trim().toUpperCase(); 
+    // trim() removes extra spaces, toUpperCase() standardizes input
 
-    // If empty, show guidance
+    // Empty coupon => show guidance
     if (code === '') {
       this.uiMessage = 'Please enter a coupon code.';
       return;
     }
 
-    // Demo rule: only SAVE10 is considered valid
+    // Demo rule: Only SAVE10 is valid
     if (code === 'SAVE10') {
       this.uiMessage = 'Coupon applied: SAVE10.';
     } else {
@@ -115,47 +146,56 @@ export class App {
     }
   }
 
-  // (change) Shipping dropdown selection changed
-  // Real-time: shipping changes can affect delivery ETA & price (demo shows only message)
-  onShippingChange(event: Event): void {
-    this.shippingOption = (event.target as HTMLSelectElement).value;
+  // Called when shipping dropdown changes.
+  // Real-world note:
+  // - Shipping selection often affects delivery estimate and charges.
+  // - Here we show a confirmation message for learning.
+  onShippingChanged(value: string): void {
+    this.shippingOption = value; // Update selected option
     this.uiMessage = `Shipping set to: ${this.shippingOption}`;
   }
 
-  // (click) Pay Now button
-  // Real-time: payment success changes multiple UI elements:
-  // - payment badge becomes "Paid"
-  // - Pay Now button gets disabled
-  // - Place Order becomes enabled
-  // - progress increases
+  // Toggle membership (demo action)
+  // Real-world note:
+  // - Membership may come from user profile / subscription.
+  // - We keep a toggle only for learning how UI changes with state.
+  toggleMembership(): void {
+    this.isPremiumCustomer = !this.isPremiumCustomer; // Flip boolean
+    this.uiMessage = `Membership changed to: ${this.getMembershipLabel()}.`;
+  }
+
+  // Pay Now action
+  // Real-world behaviour:
+  // - Payment success changes the application workflow:
+  //   1) Payment badge turns to Paid
+  //   2) Pay Now button disables
+  //   3) Place Order becomes enabled
+  //   4) Progress moves forward
   payNow(): void {
-    this.isPaymentDone = true; // update payment status flag
+    this.isPaymentDone = true; // Payment marked as completed
     this.uiMessage = `Payment received for ${this.orderId}. You can now place the order.`;
 
-    // Demo: once paid, order moves forward in workflow
+    // Demo: After payment, delivery process advances
     this.deliveryProgressPercent = 60;
   }
 
-  // (submit) Place Order form submit
-  // Real-time: final confirmation should not happen unless payment is done
+  // Place Order action (form submit)
+  // Why preventDefault?
+  // - HTML forms try to reload the page on submit.
+  // - In SPA apps like Angular, we avoid full reload.
   placeOrder(event: Event): void {
-    event.preventDefault(); // prevent full page reload on form submit
+    event.preventDefault(); // Stop browser default form submission
 
-    // Validate payment state first
+    // Safety validation: Don't allow placing order before payment
     if (!this.isPaymentDone) {
       this.uiMessage = 'Please complete payment before placing the order.';
       return;
     }
 
-    // Payment done: order can be placed successfully
+    // Success scenario
     this.uiMessage = `Order placed successfully! Order Id: ${this.orderId}`;
-    this.deliveryProgressPercent = 100; // demo: show as completed
-  }
 
-  // (click) Toggle Membership button
-  // Real-time: membership changes can affect pricing (discount) and UI badge
-  toggleMembership(): void {
-    this.isPremiumCustomer = !this.isPremiumCustomer; // flip the membership flag
-    this.uiMessage = `Membership changed to: ${this.getMembershipLabel()}`;
+    // Demo: Mark delivery progress as complete
+    this.deliveryProgressPercent = 100;
   }
 }
